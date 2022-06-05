@@ -1,0 +1,50 @@
+pipeline {
+	agent {
+		label 'master'
+	}
+	environment { 
+        	project_path='spring-boot-samples/spring-boot-sample-atmosphere'
+    	}
+	tools {
+		maven 'M3.8'
+	}
+	parameters { 
+		string(name: 'MVN_OPTION', defaultValue: 'package', description: '') 
+	}
+	options {
+        	timeout(time: 1, unit: 'HOURS') 
+    	}
+	triggers {
+        	cron('0 12 * * 0')
+    	}
+	stages {
+
+		stage('Build') {
+			steps {
+    				sh "mvn clean $MVN_OPTION -f $project_path/pom.xml"
+    			}
+		}
+		stage('Post Build Actions') {
+			parallel {
+				stage('Test Result') {
+					steps {
+						junit "$project_path/target/surefire-reports/*.xml"
+					}
+				}
+				stage('Archive Artifact') {
+					steps {
+					    archiveArtifacts artifacts: "$project_path/target/*.?ar", followSymlinks: false
+					}
+				}
+			}
+		}
+	}
+	post {
+		success {
+			echo "Success"
+		}
+		failure {
+			echo "Failed"
+		}
+	}
+}

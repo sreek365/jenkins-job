@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    
+    tools {
+        maven 'M3'
+    }
+    
+    stages{
+        stage('Build') {
+            steps {
+                sh 'cd spring-boot-samples/spring-boot-sample-atmosphere; mvn clean package'
+            }
+        }
+        stage('Sonarqube Run') {
+            steps {
+                withSonarQubeEnv('Sonar-server') {
+                    sh 'cd spring-boot-samples/spring-boot-sample-atmosphere; mvn sonar:sonar'
+                }
+            }
+        }
+        stage('Quality Check') {
+            steps {
+                echo "Quality gate check started"
+                timeout(time:1, unit:'HOURS') {
+                    script {
+                        sleep 20
+                        def qg = waitForQualityGate()
+                        if(qg.status != 'OK') {
+                            error 'Pipeline aborted due to quality gate failure: ${qg.status}'
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
