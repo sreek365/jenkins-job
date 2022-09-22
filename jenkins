@@ -1,0 +1,33 @@
+pipeline{
+  agent any
+  tools{
+      maven 'mvn_3.8.5'
+  }
+  stages{
+    stage('clone'){
+      steps{
+        git branch: 'main', url: 'https://github.com/sreek365/jenkins-job.git'
+      }
+    }
+    stage('build'){
+        steps{
+          sh "mvn -f spring-boot-samples/spring-boot-sample-atmosphere/pom.xml clean package"
+        }
+      }
+      stage('archive'){
+        steps{
+          archiveArtifacts artifacts: 'spring-boot-samples/spring-boot-sample-atmosphere/target/*.?ar', followSymlinks: false
+        }
+      }
+      stage('junit'){
+        steps{
+        junit 'spring-boot-samples/spring-boot-sample-atmosphere/target/surefire-reports/*.xml'
+        }
+      }
+  }
+  post {
+    always{
+      slackSend channel: 'jenkins', color: '#00FF00', message: "Build success", teamDomain: 'sreek365gmail-8s09580'
+    }
+  }      
+}
